@@ -87,7 +87,7 @@ export default function Tips() {
         <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 rounded-2xl shadow-2xl p-8 md:p-12 text-white text-center mb-16">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Unlock Premium Templates for Only $5!
+              Unlock Premium Templates for Only $3!
             </h2>
             <p className="text-xl mb-8 opacity-95">
               Give yourself a professional edge with our premium templates. Research shows they boost job interview chances by 40%!

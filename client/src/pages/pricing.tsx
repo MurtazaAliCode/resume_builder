@@ -29,7 +29,7 @@ export default function Pricing() {
     },
     {
       name: "Premium",
-      price: "$5",
+      price: "$3",
       description: "Invest in your career success",
       features: [
         "Everything in Free Trial",
@@ -65,7 +65,7 @@ export default function Pricing() {
             Choose Your Plan
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Start with our free trial or invest $5 for a resume that lands your dream job!
+            Start with our free trial or invest $3 for a resume that lands your dream job!
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export default function Pricing() {
             <div className="flex items-center justify-center mb-6">
               <Crown className="h-12 w-12 text-yellow-300 mr-4" />
               <h2 className="text-3xl md:text-4xl font-bold">
-                Why Invest $5 in Your Career?
+                Why Invest $3 in Your Career?
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, Layout, User, LogOut, Crown } from "lucide-react";
+import { FileText, Plus, Layout, User, LogOut, Crown, PlusCircle } from "lucide-react";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -56,7 +56,7 @@ export default function Dashboard() {
               <FileText className="h-8 w-8 text-purple-600" />
               <span className="text-2xl font-bold text-gray-800">ResumeBuilder Pro</span>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-600" />
@@ -90,7 +90,7 @@ export default function Dashboard() {
           {options.map((option, index) => (
             <Card key={index} className="template-card group relative overflow-hidden shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-br from-white via-gray-50 to-gray-100 opacity-50"></div>
-              
+
               <CardHeader className="relative z-10 text-center pb-4">
                 <div className={`${option.color} w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-xl`}>
                   <option.icon className="h-10 w-10 text-white" />

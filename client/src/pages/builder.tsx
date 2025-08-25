@@ -1,36 +1,55 @@
 import { useParams, useLocation, Link } from "wouter";
 import { useState, useEffect } from "react";
+import { ArrowLeft, Save, Download, TrendingUp, Users, Star, Crown, ImageIcon, Type, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
-import { generateTemplates } from "../lib/resume-data";
-import { ResumePreview } from "../components/resume-preview";
-import { generateAISuggestions } from "../lib/ai-suggestions";
-import { generatePDF } from "../lib/pdf-generator";
-import { ProfileUpload } from "../components/profile-upload";
-import { AIChatbot } from "../components/ai-chatbot";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { ResumeData } from "@shared/schema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { generatePDF } from "../lib/pdf-generator";
+import { ResumeData, createEmptyResumeData } from "../lib/resume-data";
+import { getSuggestion } from "../lib/ai-suggestions";
+import RankingModal from "../components/ranking-modal";
+import AIChatbot from "../components/ai-chatbot";
+import ProfileUpload from "../components/profile-upload";
+import ResumePreview from "../components/resume-preview";
 
 export default function Builder() {
-  const { templateId } = useParams<{ templateId?: string }>();
+  const { templateId: paramTemplateId } = useParams<{ templateId?: string }>(); // Renamed to avoid conflict
   const [location] = useLocation();
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
-  const isPaid = urlParams.get('type') === 'paid';
-
   const [currentStep, setCurrentStep] = useState(1);
+  const [resumeData, setResumeData] = useState<ResumeData>(createEmptyResumeData());
   const [showRanking, setShowRanking] = useState(false);
   const [suggestions, setSuggestions] = useState<Record<string, string[]>>({});
-  
-  const [resumeData, setResumeData] = useState<ResumeData>({
-    personal: {},
-    education: {},
-    skills: {},
-    additional: {},
+  const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState<string | null>(null);
+  const [templateCustomization, setTemplateCustomization] = useState({
+    fontFamily: 'Arial',
+    fontSize: '12',
+    primaryColor: '#3B82F6',
+    secondaryColor: '#6B7280',
+    layout: 'standard'
   });
+
+  // Get template info from URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const templateId = urlParams.get('template') || paramTemplateId || 'default'; // Use paramTemplateId if available
+  const templateCategory = urlParams.get('category') || 'classic';
+  const isPremium = urlParams.get('premium') === 'true';
+
+  const template = { 
+    id: templateId,
+    name: templateId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()), 
+    category: templateCategory,
+    isPaid: isPremium 
+  };
+  const isPaid = template.isPaid;
 
   // Check authentication and load saved data
   useEffect(() => {
@@ -40,24 +59,36 @@ export default function Builder() {
       return;
     }
 
-    const saved = localStorage.getItem('resumeBuilder_data');
+    const saved = localStorage.getItem(`resumeBuilder_data_${templateId}`); // Save data per template
     if (saved) {
       try {
         setResumeData(JSON.parse(saved));
       } catch (error) {
         console.error('Failed to load saved data:', error);
       }
+    } else {
+      // If no saved data for this template, initialize with empty data
+      setResumeData(createEmptyResumeData());
     }
-  }, []);
+  }, [templateId]); // Re-run when templateId changes
 
   // Save to localStorage whenever resumeData changes
   useEffect(() => {
-    localStorage.setItem('resumeBuilder_data', JSON.stringify(resumeData));
-  }, [resumeData]);
+    localStorage.setItem(`resumeBuilder_data_${templateId}`, JSON.stringify(resumeData));
+  }, [resumeData, templateId]);
 
-  const template = templateId ? generateTemplates("modern", 30).find(t => t.id === templateId) : null;
+  // TODO: Replace with actual template fetching based on templateId
+  // For now, using a mock template object based on URL params
+  const fetchedTemplate = { 
+    id: templateId,
+    name: templateId.charAt(0).toUpperCase() + templateId.slice(1).replace('_', ' '),
+    description: "A professionally designed resume template.",
+    category: templateCategory,
+    isPaid: isPremium,
+    previewImage: "/path/to/preview.jpg" // Placeholder
+  };
 
-  if (!template) {
+  if (!fetchedTemplate) { // This check might be redundant if we always provide a default
     return (
       <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
@@ -75,8 +106,43 @@ export default function Builder() {
     { id: 2, name: 'Education', icon: '🎓' },
     { id: 3, name: 'Skills & Experience', icon: '💼' },
     { id: 4, name: 'Languages & Additional', icon: '🌍' },
-    { id: 5, name: 'Review & Finalize', icon: '✅' },
+    { id: 5, name: 'Review & Customize', icon: '✨' }, // Changed icon for customization
   ];
+
+  const calculateCompleteness = () => {
+    let score = 0;
+    let totalFields = 0;
+
+    // Personal Info
+    totalFields += 4;
+    if (resumeData.personal.name) score += 1;
+    if (resumeData.personal.email) score += 1;
+    if (resumeData.personal.title) score += 1;
+    if (resumeData.personal.phone) score += 1;
+
+    // Education
+    totalFields += 4;
+    if (resumeData.education.degree) score += 1;
+    if (resumeData.education.institution) score += 1;
+    if (resumeData.education.startYear) score += 1;
+    if (resumeData.education.endYear) score += 1;
+
+    // Skills & Experience
+    totalFields += 5; // Assuming jobTitle, company, duration, description, technical skills
+    if (resumeData.skills.jobTitle) score += 1;
+    if (resumeData.skills.company) score += 1;
+    if (resumeData.skills.duration) score += 1;
+    if (resumeData.skills.description) score += 1;
+    if (resumeData.skills.technical) score += 1;
+
+    // Languages & Additional
+    totalFields += 3; // Assuming languages, certifications, projects
+    if (resumeData.additional.languages) score += 1;
+    if (resumeData.additional.certifications) score += 1;
+    if (resumeData.additional.projects) score += 1;
+
+    return Math.min(Math.round((score / totalFields) * 100), 100);
+  };
 
   const calculateRanking = () => {
     let score = 70; // Base score
@@ -95,10 +161,18 @@ export default function Builder() {
     }));
 
     // Generate AI suggestions for certain fields
-    if (value.length > 2 && ['title', 'description', 'technical'].includes(field)) {
+    if (value.length > 2 && ['title', 'description', 'technical', 'personal_title', 'education_degree'].includes(field)) {
       const suggestionKey = `${section}_${field}`;
-      const aiSuggestions = await generateAISuggestions(field, value);
-      setSuggestions(prev => ({ ...prev, [suggestionKey]: aiSuggestions }));
+      setIsGeneratingSuggestion(suggestionKey);
+      try {
+        // Mock AI suggestion generation
+        const aiSuggestions = await getSuggestion(field, value);
+        setSuggestions(prev => ({ ...prev, [suggestionKey]: aiSuggestions }));
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+      } finally {
+        setIsGeneratingSuggestion(null);
+      }
     }
   };
 
@@ -117,15 +191,20 @@ export default function Builder() {
   };
 
   const handleDownloadPDF = () => {
-    generatePDF(resumeData, template, isPaid);
+    // Pass customization options to the PDF generator
+    generatePDF(resumeData, fetchedTemplate, isPaid, templateCustomization);
   };
 
   const getMissingFields = () => {
     const missing = [];
     if (!resumeData.personal.name) missing.push('Name');
     if (!resumeData.personal.email) missing.push('Email');
-    if (!resumeData.education.degree) missing.push('Education');
-    if (!resumeData.skills.technical) missing.push('Skills');
+    if (!resumeData.education.degree) missing.push('Education Degree');
+    if (!resumeData.skills.technical) missing.push('Technical Skills');
+    if (!resumeData.skills.jobTitle) missing.push('Job Title');
+    if (!resumeData.skills.company) missing.push('Company Name');
+    if (!resumeData.skills.duration) missing.push('Job Duration');
+    if (!resumeData.skills.description) missing.push('Job Description');
     return missing;
   };
 
@@ -136,8 +215,9 @@ export default function Builder() {
           <PersonalInfoForm
             data={resumeData.personal}
             onChange={(field, value) => handleInputChange('personal', field, value)}
-            suggestions={suggestions}
+            suggestions={suggestions.personal_title} // Pass specific suggestion
             onApplySuggestion={(field, suggestion) => applySuggestion('personal', field, suggestion)}
+            isGenerating={isGeneratingSuggestion === 'personal_title'}
           />
         );
       case 2:
@@ -145,6 +225,9 @@ export default function Builder() {
           <EducationForm
             data={resumeData.education}
             onChange={(field, value) => handleInputChange('education', field, value)}
+            suggestions={suggestions.education_degree} // Pass specific suggestion
+            onApplySuggestion={(field, suggestion) => applySuggestion('education', field, suggestion)}
+            isGenerating={isGeneratingSuggestion === 'education_degree'}
           />
         );
       case 3:
@@ -152,8 +235,9 @@ export default function Builder() {
           <SkillsForm
             data={resumeData.skills}
             onChange={(field, value) => handleInputChange('skills', field, value)}
-            suggestions={suggestions}
+            suggestions={suggestions.skills_technical || suggestions.skills_description} // Combine or select appropriate
             onApplySuggestion={(field, suggestion) => applySuggestion('skills', field, suggestion)}
+            isGenerating={isGeneratingSuggestion === 'skills_technical' || isGeneratingSuggestion === 'skills_description'}
           />
         );
       case 4:
@@ -169,6 +253,10 @@ export default function Builder() {
             resumeData={resumeData}
             isPaid={isPaid}
             onDownload={handleDownloadPDF}
+            calculateCompleteness={calculateCompleteness}
+            getMissingFields={getMissingFields}
+            templateCustomization={templateCustomization}
+            onTemplateCustomizationChange={setTemplateCustomization}
           />
         );
       default:
@@ -177,7 +265,7 @@ export default function Builder() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-muted/30" style={{ fontFamily: templateCustomization.fontFamily }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -191,7 +279,7 @@ export default function Builder() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Resume Builder</h1>
               <p className="text-muted-foreground">
-                Template: {template.name} ({isPaid ? 'Paid' : 'Free Trial'})
+                Template: {fetchedTemplate.name} ({isPaid ? 'Premium' : 'Free'})
               </p>
             </div>
             {currentStep === 5 && (
@@ -242,7 +330,7 @@ export default function Builder() {
                   onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
                   disabled={currentStep === 1}
                 >
-                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  <ArrowLeft className="mr-2 h-4 w-4" />
                   Previous
                 </Button>
                 <Button
@@ -250,8 +338,8 @@ export default function Builder() {
                   disabled={currentStep === 5}
                   className="btn-primary"
                 >
-                  {currentStep === 5 ? 'Complete' : 'Next'}
-                  <ChevronRight className="ml-2 h-4 w-4" />
+                  {currentStep === 5 ? 'Download' : 'Next'}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
@@ -263,7 +351,12 @@ export default function Builder() {
               <CardTitle>Live Preview</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResumePreview resumeData={resumeData} template={template} isPaid={isPaid} />
+              <ResumePreview 
+                resumeData={resumeData} 
+                template={fetchedTemplate} 
+                isPaid={isPaid} 
+                customization={templateCustomization} 
+              />
             </CardContent>
           </Card>
         </div>
@@ -285,8 +378,15 @@ export default function Builder() {
         {/* AI Chatbot */}
         <AIChatbot 
           onSuggestion={(suggestion) => {
-            // Apply suggestion to current active field
+            // This basic example applies to the current field being edited.
+            // A more sophisticated implementation would identify the target field.
             console.log('Chatbot suggestion:', suggestion);
+            // For now, let's assume it applies to the 'description' field in the current step if available.
+            if (currentStep === 3) { // Skills & Experience step
+              applySuggestion('skills', 'description', suggestion);
+            } else if (currentStep === 1) { // Personal Info step
+              applySuggestion('personal', 'title', suggestion);
+            }
           }}
           context={{
             field: 'general',
@@ -302,15 +402,16 @@ export default function Builder() {
 interface FormProps {
   data: any;
   onChange: (field: string, value: string) => void;
-  suggestions?: Record<string, string[]>;
+  suggestions?: string[];
   onApplySuggestion?: (field: string, suggestion: string) => void;
+  isGenerating?: boolean;
 }
 
-function PersonalInfoForm({ data, onChange, suggestions, onApplySuggestion }: FormProps) {
+function PersonalInfoForm({ data, onChange, suggestions, onApplySuggestion, isGenerating }: FormProps) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-foreground">Personal Information</h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name">Full Name *</Label>
@@ -321,7 +422,7 @@ function PersonalInfoForm({ data, onChange, suggestions, onApplySuggestion }: Fo
             onChange={(e) => onChange('name', e.target.value)}
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="email">Email *</Label>
           <Input
@@ -345,7 +446,7 @@ function PersonalInfoForm({ data, onChange, suggestions, onApplySuggestion }: Fo
             onChange={(e) => onChange('phone', e.target.value)}
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="title">Professional Title</Label>
           <Input
@@ -354,10 +455,11 @@ function PersonalInfoForm({ data, onChange, suggestions, onApplySuggestion }: Fo
             value={data.title || ''}
             onChange={(e) => onChange('title', e.target.value)}
           />
-          {suggestions && suggestions.personal_title && (
+          {suggestions && suggestions.length > 0 && (
             <SuggestionBox
-              suggestions={suggestions.personal_title}
+              suggestions={suggestions}
               onApply={(suggestion) => onApplySuggestion && onApplySuggestion('title', suggestion)}
+              isGenerating={isGenerating}
             />
           )}
         </div>
@@ -376,11 +478,7 @@ function PersonalInfoForm({ data, onChange, suggestions, onApplySuggestion }: Fo
       </div>
 
       <ProfileUpload 
-        value={data.profilePicture}
-        onChange={(imageData) => onChange('profilePicture', imageData)}
-      />
-
-      <ProfileUpload 
+        label="Profile Picture"
         value={data.profilePicture}
         onChange={(imageData) => onChange('profilePicture', imageData)}
       />
@@ -388,11 +486,11 @@ function PersonalInfoForm({ data, onChange, suggestions, onApplySuggestion }: Fo
   );
 }
 
-function EducationForm({ data, onChange }: Omit<FormProps, 'suggestions' | 'onApplySuggestion'>) {
+function EducationForm({ data, onChange, suggestions, onApplySuggestion, isGenerating }: FormProps) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-foreground">Education</h3>
-      
+
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="degree">Degree *</Label>
@@ -402,6 +500,13 @@ function EducationForm({ data, onChange }: Omit<FormProps, 'suggestions' | 'onAp
             value={data.degree || ''}
             onChange={(e) => onChange('degree', e.target.value)}
           />
+          {suggestions && suggestions.length > 0 && (
+            <SuggestionBox
+              suggestions={suggestions}
+              onApply={(suggestion) => onApplySuggestion && onApplySuggestion('degree', suggestion)}
+              isGenerating={isGenerating}
+            />
+          )}
         </div>
 
         <div className="space-y-2">
@@ -451,11 +556,11 @@ function EducationForm({ data, onChange }: Omit<FormProps, 'suggestions' | 'onAp
   );
 }
 
-function SkillsForm({ data, onChange, suggestions, onApplySuggestion }: FormProps) {
+function SkillsForm({ data, onChange, suggestions, onApplySuggestion, isGenerating }: FormProps) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-foreground">Skills & Experience</h3>
-      
+
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="technical">Technical Skills</Label>
@@ -466,10 +571,11 @@ function SkillsForm({ data, onChange, suggestions, onApplySuggestion }: FormProp
             value={data.technical || ''}
             onChange={(e) => onChange('technical', e.target.value)}
           />
-          {suggestions && suggestions.skills_technical && (
+          {suggestions && suggestions.length > 0 && (
             <SuggestionBox
-              suggestions={suggestions.skills_technical}
+              suggestions={suggestions}
               onApply={(suggestion) => onApplySuggestion && onApplySuggestion('technical', suggestion)}
+              isGenerating={isGenerating}
             />
           )}
         </div>
@@ -514,10 +620,11 @@ function SkillsForm({ data, onChange, suggestions, onApplySuggestion }: FormProp
             value={data.description || ''}
             onChange={(e) => onChange('description', e.target.value)}
           />
-          {suggestions && suggestions.skills_description && (
+          {suggestions && suggestions.length > 0 && (
             <SuggestionBox
-              suggestions={suggestions.skills_description}
+              suggestions={suggestions}
               onApply={(suggestion) => onApplySuggestion && onApplySuggestion('description', suggestion)}
+              isGenerating={isGenerating}
             />
           )}
         </div>
@@ -526,11 +633,11 @@ function SkillsForm({ data, onChange, suggestions, onApplySuggestion }: FormProp
   );
 }
 
-function AdditionalForm({ data, onChange }: Omit<FormProps, 'suggestions' | 'onApplySuggestion'>) {
+function AdditionalForm({ data, onChange }: Omit<FormProps, 'suggestions' | 'onApplySuggestion' | 'isGenerating'>) {
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-foreground">Languages & Additional Information</h3>
-      
+
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="languages">Languages</Label>
@@ -569,11 +676,27 @@ function AdditionalForm({ data, onChange }: Omit<FormProps, 'suggestions' | 'onA
   );
 }
 
-function ReviewForm({ resumeData, isPaid, onDownload }: { resumeData: ResumeData; isPaid: boolean; onDownload: () => void }) {
+function ReviewForm({ 
+  resumeData, 
+  isPaid, 
+  onDownload, 
+  calculateCompleteness, 
+  getMissingFields, 
+  templateCustomization, 
+  onTemplateCustomizationChange 
+}: { 
+  resumeData: ResumeData; 
+  isPaid: boolean; 
+  onDownload: () => void; 
+  calculateCompleteness: () => number;
+  getMissingFields: () => string[];
+  templateCustomization: { fontFamily: string; fontSize: string; primaryColor: string; secondaryColor: string; layout: string };
+  onTemplateCustomizationChange: (customization: { fontFamily: string; fontSize: string; primaryColor: string; secondaryColor: string; layout: string }) => void;
+}) {
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-foreground">Review & Finalize</h3>
-      
+      <h3 className="text-lg font-semibold text-foreground">Review & Customize</h3>
+
       <div className="space-y-4">
         <Card>
           <CardContent className="p-4">
@@ -582,32 +705,132 @@ function ReviewForm({ resumeData, isPaid, onDownload }: { resumeData: ResumeData
               <p><strong>Name:</strong> {resumeData.personal.name || 'Not provided'}</p>
               <p><strong>Email:</strong> {resumeData.personal.email || 'Not provided'}</p>
               <p><strong>Education:</strong> {resumeData.education.degree || 'Not provided'}</p>
-              <p><strong>Experience:</strong> {resumeData.skills.jobTitle || 'Not provided'}</p>
+              <p><strong>Experience:</strong> {resumeData.skills.jobTitle || resumeData.skills.company || 'Not provided'}</p>
             </div>
           </CardContent>
         </Card>
 
-        <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
-          <div className="flex items-center text-primary">
-            <span className="text-sm">
-              {isPaid ? 'Premium version - No watermark on PDF' : 'Free trial - PDF will include watermark'}
-            </span>
-          </div>
+        {/* Advanced Customization Panel */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Palette className="mr-2 h-5 w-5" />
+              Design Customization
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fontFamily">Font Family</Label>
+                <Select value={templateCustomization.fontFamily} onValueChange={(value) => 
+                  onTemplateCustomizationChange({ ...templateCustomization, fontFamily: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Arial">Arial</SelectItem>
+                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                    <SelectItem value="Calibri">Calibri</SelectItem>
+                    <SelectItem value="Georgia">Georgia</SelectItem>
+                    <SelectItem value="Helvetica">Helvetica</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fontSize">Font Size</Label>
+                <Select value={templateCustomization.fontSize} onValueChange={(value) => 
+                  onTemplateCustomizationChange({ ...templateCustomization, fontSize: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10pt</SelectItem>
+                    <SelectItem value="11">11pt</SelectItem>
+                    <SelectItem value="12">12pt</SelectItem>
+                    <SelectItem value="13">13pt</SelectItem>
+                    <SelectItem value="14">14pt</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="primaryColor">Primary Color</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    type="color" 
+                    value={templateCustomization.primaryColor}
+                    onChange={(e) => onTemplateCustomizationChange({ ...templateCustomization, primaryColor: e.target.value })}
+                    className="w-16 h-10 p-0"
+                  />
+                  <Input 
+                    value={templateCustomization.primaryColor}
+                    onChange={(e) => onTemplateCustomizationChange({ ...templateCustomization, primaryColor: e.target.value })}
+                    placeholder="#3B82F6"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="layout">Layout Style</Label>
+                <Select value={templateCustomization.layout} onValueChange={(value) => 
+                  onTemplateCustomizationChange({ ...templateCustomization, layout: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="modern">Modern</SelectItem>
+                    <SelectItem value="creative">Creative</SelectItem>
+                    <SelectItem value="minimal">Minimal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="bg-card rounded-lg border p-6">
+          <h4 className="text-lg font-semibold mb-4 flex items-center">
+            <TrendingUp className="mr-2 h-5 w-5 text-emerald-600" />
+            Resume Completeness: {calculateCompleteness()}%
+          </h4>
+          <Progress value={calculateCompleteness()} className="mb-4" />
+
+          {getMissingFields().length > 0 && (
+            <Alert className="mb-4">
+              <AlertDescription>
+                <strong>Suggestion:</strong> Consider adding {getMissingFields().join(', ')} to improve your resume's effectiveness.
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
-        <Button onClick={onDownload} className="w-full bg-emerald-600 hover:bg-emerald-700">
-          Download Resume PDF
-        </Button>
+        <div className="flex gap-4 justify-center">
+          <Button onClick={onDownload} className="btn-primary px-8 py-3">
+            <Download className="mr-2 h-5 w-5" />
+            Download PDF {!isPaid && "(Watermarked)"}
+          </Button>
+          {!isPaid && (
+            <Button variant="outline" className="px-8 py-3">
+              <Crown className="mr-2 h-5 w-5" />
+              Upgrade for $3
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function SuggestionBox({ suggestions, onApply }: { suggestions: string[], onApply: (suggestion: string) => void }) {
+function SuggestionBox({ suggestions, onApply, isGenerating }: { suggestions: string[], onApply: (suggestion: string) => void, isGenerating?: boolean }) {
   return (
     <div className="mt-2 space-y-1">
-      <p className="text-xs text-muted-foreground">AI Suggestions:</p>
-      {suggestions.slice(0, 4).map((suggestion, i) => (
+      <p className="text-xs text-muted-foreground flex items-center">
+        AI Suggestions: {isGenerating && <span className="ml-2 animate-pulse">Generating...</span>}
+      </p>
+      {!isGenerating && suggestions.length > 0 && suggestions.slice(0, 4).map((suggestion, i) => (
         <button
           key={i}
           className="block w-full text-left p-2 text-sm bg-muted hover:bg-muted/80 rounded border transition-colors"
@@ -616,43 +839,6 @@ function SuggestionBox({ suggestions, onApply }: { suggestions: string[], onAppl
           {suggestion}
         </button>
       ))}
-    </div>
-  );
-}
-
-function RankingModal({ score, missingFields, onClose }: { score: number; missingFields: string[]; onClose: () => void }) {
-  return (
-    <div className="text-center p-4">
-      <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <TrendingUp className="h-10 w-10 text-emerald-600" />
-      </div>
-      
-      <div className="text-4xl font-bold text-emerald-600 mb-4">
-        {score}%
-      </div>
-      
-      <p className="text-muted-foreground mb-6">
-        Your resume has a <strong>{score}% chance</strong> of securing a job interview!
-      </p>
-
-      {missingFields.length > 0 && (
-        <div className="bg-amber-50 p-4 rounded-lg mb-6 border border-amber-200">
-          <p className="text-sm text-amber-800 mb-2">
-            <strong>Improve your score by adding:</strong>
-          </p>
-          <ul className="text-sm text-amber-700">
-            {missingFields.map((field: string) => (
-              <li key={field}>• {field}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        <Button onClick={onClose} className="w-full">
-          Continue Editing
-        </Button>
-      </div>
     </div>
   );
 }

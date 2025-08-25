@@ -35,7 +35,7 @@ export default function Terms() {
         "Account registration required to access all platform features.",
         "Choose between editing existing templates or creating from scratch.",
         "Free trial includes watermarked PDF downloads and limited customization.",
-        "Premium ($5) service provides watermark-free PDFs and full customization.",
+        "Premium ($3) service provides watermark-free PDFs and full customization.",
         "All users get access to AI-powered suggestions and real-time preview.",
         "Template library contains 130+ professionally designed resumes."
       ]
