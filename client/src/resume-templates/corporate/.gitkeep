@@ -1,0 +1,3 @@
+# This file ensures the corporate templates folder is tracked by git
+# Upload your corporate resume templates here following the naming convention:
+# corporate_01.pdf, corporate_02.pdf, ... corporate_30.pdf
