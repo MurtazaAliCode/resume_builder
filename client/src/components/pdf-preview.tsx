@@ -1,38 +1,38 @@
-import { getDocument } from 'pdfjs-dist';
-import { useEffect, useRef, useState } from 'react';
-
+import { useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker?url';
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+import PdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url'; // Changed to .mjs
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorkerUrl;
 
 export function PdfPreview({ filePath }: { filePath: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const renderPdf = async () => {
-      setLoading(true);
-      setError(null);
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        console.error('Canvas element not found.');
+        return;
+      }
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        console.error('Canvas context not available.');
+        return;
+      }
+      
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = 'gray';
+      context.font = '20px Arial';
+      context.textAlign = 'center';
+      context.fillText('Loading Preview...', canvas.width / 2, canvas.height / 2);
+
       try {
-        const loadingTask = getDocument(filePath);
+        const loadingTask = pdfjsLib.getDocument(filePath);
         const pdf = await loadingTask.promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1.0 });
-        const canvas = canvasRef.current;
-        if (!canvas) {
-          setError("Canvas not found");
-          setLoading(false);
-          return;
-        }
-
-        const context = canvas.getContext('2d');
-        if (!context) {
-          setError("Could not get canvas context");
-          setLoading(false);
-          return;
-        }
-
+        
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
@@ -40,28 +40,24 @@ export function PdfPreview({ filePath }: { filePath: string }) {
           canvasContext: context,
           viewport: viewport,
         };
+        
         await page.render(renderContext).promise;
-      } catch (err: any) {
-        console.error('Error rendering PDF:', err);
-        setError(`Failed to load PDF. ${err.message}`);
-      } finally {
-        setLoading(false);
+
+      } catch (error: any) {
+        console.error(`[PDF-DEBUG] Error rendering PDF for ${filePath}:`, error);
+        
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = 'red';
+        context.font = '16px Arial';
+        context.textAlign = 'left';
+        context.fillText('Error:', 10, 30);
+        context.fillText(error.message, 10, 50);
+        context.fillText('Check console for details.', 10, 80);
       }
     };
 
-    if (filePath) {
-      renderPdf();
-    } else {
-      setError("No file path provided.");
-      setLoading(false);
-    }
+    renderPdf();
   }, [filePath]);
 
-  return (
-    <div className="w-full h-full flex items-center justify-center bg-gray-100">
-      {loading && <p className="text-gray-500">Loading preview...</p>}
-      {error && <p className="text-red-500 p-4 text-center">{error}</p>}
-      <canvas ref={canvasRef} className={`w-full h-full ${loading || error ? 'hidden' : ''}`} />
-    </div>
-  );
+  return <canvas ref={canvasRef} width="400" height="565" className="w-full h-full object-cover" />;
 }
