@@ -94,7 +94,7 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
-            <AuthButtons />
+            
           </div>
 
           {/* Mobile Navigation */}

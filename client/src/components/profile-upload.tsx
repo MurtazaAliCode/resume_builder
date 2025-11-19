@@ -39,7 +39,7 @@ export function ProfileUpload({ value, onChange }: ProfileUploadProps) {
   return (
     <div className="space-y-4">
       <label className="text-sm font-medium text-foreground">Profile Picture (Optional)</label>
-      
+
       {value ? (
         <div className="relative w-32 h-32 mx-auto">
           <img
@@ -94,3 +94,5 @@ export function ProfileUpload({ value, onChange }: ProfileUploadProps) {
     </div>
   );
 }
+
+export default ProfileUpload; // Default export add kiya gaya

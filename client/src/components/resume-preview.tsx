@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import type { ResumeData, Template } from "@shared/schema";
-import { getDocument } from 'pdfjs-dist';
+import { getDocument } from 'pdfjs-dist/build/pdf'; // Proper import for pdfjs-dist
 import { useState, useEffect } from 'react';
 
 interface ResumePreviewProps {
@@ -13,36 +13,17 @@ export function ResumePreview({ resumeData, template, isPaid }: ResumePreviewPro
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Map of template names to their imported PDF files using import
+  // Map of template names to their static PDF files (assuming they are in public folder)
   const templateMap: { [key: string]: string } = {
-    'modern_01': new URL('../../src/resume-templates/modern/modern_01.pdf', import.meta.url).href,
-    'modern_02': new URL('../../src/resume-templates/modern/modern_02.pdf', import.meta.url).href,
-    'modern_03': new URL('../../src/resume-templates/modern/modern_03.pdf', import.meta.url).href,
-    'modern_04': new URL('../../src/resume-templates/modern/modern_04.pdf', import.meta.url).href,
-    'modern_05': new URL('../../src/resume-templates/modern/modern_05.pdf', import.meta.url).href,
-    'modern_06': new URL('../../src/resume-templates/modern/modern_06.pdf', import.meta.url).href,
-    'modern_07': new URL('../../src/resume-templates/modern/modern_07.pdf', import.meta.url).href,
-    'modern_08': new URL('../../src/resume-templates/modern/modern_08.pdf', import.meta.url).href,
+    'modern_01': '/resume-templates/modern/modern_01.pdf',
+    'modern_02': '/resume-templates/modern/modern_02.pdf',
+    'modern_03': '/resume-templates/modern/modern_03.pdf',
+    'modern_04': '/resume-templates/modern/modern_04.pdf',
+    'modern_05': '/resume-templates/modern/modern_05.pdf',
+    'modern_06': '/resume-templates/modern/modern_06.pdf',
+    'modern_07': '/resume-templates/modern/modern_07.pdf',
+    'modern_08': '/resume-templates/modern/modern_08.pdf',
   };
-
-  // Load pdfjsLib dynamically
-  useEffect(() => {
-    if (typeof window.pdfjsLib === 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
-      script.onload = () => {
-        if (window.pdfjsLib) {
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-        } else {
-          console.error('pdfjsLib not loaded correctly');
-        }
-      };
-      script.onerror = () => console.error('Failed to load pdf.js script');
-      document.head.appendChild(script);
-    } else {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    }
-  }, []);
 
   // Load PDF content
   useEffect(() => {
@@ -73,12 +54,7 @@ export function ResumePreview({ resumeData, template, isPaid }: ResumePreviewPro
       }
     };
 
-    // Ensure pdfjsLib is loaded before loading PDF
-    if (window.pdfjsLib) {
-      loadPdf();
-    } else {
-      setError('pdfjsLib not loaded. Please check console for details.');
-    }
+    loadPdf(); // Directly call since pdfjs-dist is imported
   }, [template.name]);
 
   return (
@@ -223,3 +199,4 @@ export function ResumePreview({ resumeData, template, isPaid }: ResumePreviewPro
     </Card>
   );
 }
+export default ResumePreview; // Moved to top level, outside the function

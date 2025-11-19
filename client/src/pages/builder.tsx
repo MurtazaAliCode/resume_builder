@@ -1,7 +1,6 @@
 import { useParams, useLocation, Link } from "wouter";
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Download, TrendingUp, Users, Star, Crown, ImageIcon, Type, Palette } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Save, Download, TrendingUp, Users, Star, Crown, ImageIcon, Type, Palette, ArrowRight } from "lucide-react"; // Added ArrowRightimport { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,11 +42,11 @@ export default function Builder() {
   const templateCategory = urlParams.get('category') || 'classic';
   const isPremium = urlParams.get('premium') === 'true';
 
-  const template = { 
+  const template = {
     id: templateId,
-    name: templateId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()), 
+    name: templateId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
     category: templateCategory,
-    isPaid: isPremium 
+    isPaid: isPremium
   };
   const isPaid = template.isPaid;
 
@@ -79,7 +78,7 @@ export default function Builder() {
 
   // TODO: Replace with actual template fetching based on templateId
   // For now, using a mock template object based on URL params
-  const fetchedTemplate = { 
+  const fetchedTemplate = {
     id: templateId,
     name: templateId.charAt(0).toUpperCase() + templateId.slice(1).replace('_', ' '),
     description: "A professionally designed resume template.",
@@ -300,16 +299,14 @@ export default function Builder() {
                   <span className="text-lg">{step.icon}</span>
                 </div>
                 <div className="ml-3 hidden md:block">
-                  <div className={`text-sm font-medium ${
-                    currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'
-                  }`}>
+                  <div className={`text-sm font-medium ${currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
                     {step.name}
                   </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`w-8 h-0.5 mx-4 ${
-                    currentStep > step.id ? 'bg-primary' : 'bg-border'
-                  }`}></div>
+                  <div className={`w-8 h-0.5 mx-4 ${currentStep > step.id ? 'bg-primary' : 'bg-border'
+                    }`}></div>
                 )}
               </div>
             ))}
@@ -351,11 +348,11 @@ export default function Builder() {
               <CardTitle>Live Preview</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResumePreview 
-                resumeData={resumeData} 
-                template={fetchedTemplate} 
-                isPaid={isPaid} 
-                customization={templateCustomization} 
+              <ResumePreview
+                resumeData={resumeData}
+                template={fetchedTemplate}
+                isPaid={isPaid}
+                customization={templateCustomization}
               />
             </CardContent>
           </Card>
@@ -376,7 +373,7 @@ export default function Builder() {
         </Dialog>
 
         {/* AI Chatbot */}
-        <AIChatbot 
+        <AIChatbot
           onSuggestion={(suggestion) => {
             // This basic example applies to the current field being edited.
             // A more sophisticated implementation would identify the target field.
@@ -477,7 +474,7 @@ function PersonalInfoForm({ data, onChange, suggestions, onApplySuggestion, isGe
         />
       </div>
 
-      <ProfileUpload 
+      <ProfileUpload
         label="Profile Picture"
         value={data.profilePicture}
         onChange={(imageData) => onChange('profilePicture', imageData)}
@@ -676,18 +673,18 @@ function AdditionalForm({ data, onChange }: Omit<FormProps, 'suggestions' | 'onA
   );
 }
 
-function ReviewForm({ 
-  resumeData, 
-  isPaid, 
-  onDownload, 
-  calculateCompleteness, 
-  getMissingFields, 
-  templateCustomization, 
-  onTemplateCustomizationChange 
-}: { 
-  resumeData: ResumeData; 
-  isPaid: boolean; 
-  onDownload: () => void; 
+function ReviewForm({
+  resumeData,
+  isPaid,
+  onDownload,
+  calculateCompleteness,
+  getMissingFields,
+  templateCustomization,
+  onTemplateCustomizationChange
+}: {
+  resumeData: ResumeData;
+  isPaid: boolean;
+  onDownload: () => void;
   calculateCompleteness: () => number;
   getMissingFields: () => string[];
   templateCustomization: { fontFamily: string; fontSize: string; primaryColor: string; secondaryColor: string; layout: string };
@@ -722,7 +719,7 @@ function ReviewForm({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="fontFamily">Font Family</Label>
-                <Select value={templateCustomization.fontFamily} onValueChange={(value) => 
+                <Select value={templateCustomization.fontFamily} onValueChange={(value) =>
                   onTemplateCustomizationChange({ ...templateCustomization, fontFamily: value })}>
                   <SelectTrigger>
                     <SelectValue />
@@ -739,7 +736,7 @@ function ReviewForm({
 
               <div className="space-y-2">
                 <Label htmlFor="fontSize">Font Size</Label>
-                <Select value={templateCustomization.fontSize} onValueChange={(value) => 
+                <Select value={templateCustomization.fontSize} onValueChange={(value) =>
                   onTemplateCustomizationChange({ ...templateCustomization, fontSize: value })}>
                   <SelectTrigger>
                     <SelectValue />
@@ -757,13 +754,13 @@ function ReviewForm({
               <div className="space-y-2">
                 <Label htmlFor="primaryColor">Primary Color</Label>
                 <div className="flex gap-2">
-                  <Input 
-                    type="color" 
+                  <Input
+                    type="color"
                     value={templateCustomization.primaryColor}
                     onChange={(e) => onTemplateCustomizationChange({ ...templateCustomization, primaryColor: e.target.value })}
                     className="w-16 h-10 p-0"
                   />
-                  <Input 
+                  <Input
                     value={templateCustomization.primaryColor}
                     onChange={(e) => onTemplateCustomizationChange({ ...templateCustomization, primaryColor: e.target.value })}
                     placeholder="#3B82F6"
@@ -774,7 +771,7 @@ function ReviewForm({
 
               <div className="space-y-2">
                 <Label htmlFor="layout">Layout Style</Label>
-                <Select value={templateCustomization.layout} onValueChange={(value) => 
+                <Select value={templateCustomization.layout} onValueChange={(value) =>
                   onTemplateCustomizationChange({ ...templateCustomization, layout: value })}>
                   <SelectTrigger>
                     <SelectValue />

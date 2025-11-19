@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PdfPreview } from "@/components/pdf-preview";
 
 interface Template {
   id: string;
@@ -21,25 +22,56 @@ export default function Templates() {
   const [templates, setTemplates] = useState<Template[]>([]);
 
   useEffect(() => {
-    // Generate templates from the resume-templates folder structure
-    const generateTemplates = () => {
-      const categories = ['classic', 'corporate', 'creative', 'modern'];
-      const allTemplates: Template[] = [];
+    const classic = [
+      "classic_01.pdf", "classic_02.pdf", "classic_03.pdf", "classic_04.pdf", "classic_05.pdf",
+      "classic_06.pdf", "classic_07.pdf", "classic_08.pdf", "classic_09.pdf", "classic_10.pdf",
+      "classic_11.pdf", "classic_12.pdf", "classic_13.pdf", "classic_14.pdf", "classic_15.pdf",
+      "classic_16.pdf", "classic_17.pdf", "classic_18.pdf", "classic_19.pdf", "classic_20.pdf",
+      "classic_21.pdf", "classic_22.pdf", "classic_23.pdf", "classic_24.pdf", "classic_25.pdf",
+      "classic_26.pdf", "classic_27.pdf", "classic_28.pdf", "classic_29.pdf", "classic_30.pdf"
+    ];
 
-      categories.forEach(category => {
-        // Generate 30 templates per category based on the PDF files in each folder
-        for (let i = 1; i <= 30; i++) {
-          const templateNumber = i.toString().padStart(2, '0');
+    const corporate = [
+      "corporate_01.pdf", "corporate_02.pdf", "corporate_03.pdf", "corporate_04.pdf", "corporate_05.pdf",
+      "corporate_06.pdf", "corporate_07.pdf", "corporate_08.pdf", "corporate_09.pdf", "corporate_10.pdf",
+      "corporate_11.pdf", "corporate_12.pdf", "corporate_13.pdf", "corporate_14.pdf", "corporate_15.pdf",
+      "corporate_16.pdf", "corporate_17.pdf", "corporate_19.pdf", "corporate_20.pdf",
+      "corporate_21.pdf", "corporate_22.pdf", "corporate_23.pdf", "corporate_24.pdf", "corporate_25.pdf",
+      "corporate_26.pdf", "corporate_27.pdf", "corporate_28.pdf", "corporate_29.pdf", "corporate_30.pdf"
+    ];
+
+    const creative = [
+      "creative_21.pdf", "creative_22.pdf", "creative_23.pdf", "creative_25.pdf",
+      "creative_26.pdf", "creative_27.pdf", "creative_28.pdf", "creative_29.pdf"
+    ];
+
+    const modern = [
+      "modern_01.pdf", "modern_02.pdf", "modern_03.pdf", "modern_04.pdf", "modern_05.pdf",
+      "modern_06.pdf", "modern_07.pdf", "modern_08.pdf", "modern_09.pdf", "modern_10.pdf",
+      "modern_11.pdf", "modern_12.pdf", "modern_13.pdf", "modern_14.pdf", "modern_15.pdf",
+      "modern_16.pdf", "modern_17.pdf", "modern_18.pdf", "modern_19.pdf", "modern_20.pdf",
+      "modern_21.pdf", "modern_22.pdf", "modern_23.pdf", "modern_24.pdf", "modern_25.pdf",
+      "modern_26.pdf", "modern_27.pdf", "modern_28.pdf", "modern_29.pdf", "modern_30.pdf"
+    ];
+
+    const generateTemplates = () => {
+      const allTemplates: Template[] = [];
+      const categories = { classic, corporate, creative, modern };
+
+      Object.entries(categories).forEach(([category, files]) => {
+        files.forEach((file, index) => {
+          const templateNumber = parseInt(file.split('_')[1].split('.')[0]);
+          const fullUrl = new URL(`/resume-templates/${category}/${file}`, window.location.origin).href;
           allTemplates.push({
             id: `${category}_${templateNumber}`,
-            name: `${category.charAt(0).toUpperCase() + category.slice(1)} Template ${i}`,
+            name: `${category.charAt(0).toUpperCase() + category.slice(1)} Template ${templateNumber}`,
             category,
-            isPremium: i > 15, // First 15 are free, rest are premium
+            isPremium: index > 14, // First 15 are free
             rating: Math.round((4.5 + Math.random() * 0.5) * 10) / 10,
             downloads: `${Math.floor(Math.random() * 5000) + 1000}+`,
-            filePath: `/src/resume-templates/${category}/${category}_${templateNumber}.pdf`
+            filePath: fullUrl
           });
-        }
+        });
       });
 
       return allTemplates;
@@ -56,7 +88,13 @@ export default function Templates() {
   ];
 
   const getTemplatesByCategory = (category: string) => {
-    return templates.filter(template => template.category === category);
+    return templates
+      .filter(template => template.category === category)
+      .sort((a, b) => {
+        const aNum = parseInt(a.id.split('_')[1]);
+        const bNum = parseInt(b.id.split('_')[1]);
+        return aNum - bNum;
+      });
   };
 
   const handleTemplateSelect = (template: Template) => {
@@ -143,14 +181,12 @@ export default function Templates() {
                       <CardTitle className="text-lg">{template.name}</CardTitle>
                     </CardHeader>
 
+
+
                     <CardContent className="space-y-4">
-                      {/* Template Preview Placeholder */}
-                      <div className="aspect-[8.5/11] bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center border">
-                        <div className="text-center text-gray-500">
-                          <Eye className="h-8 w-8 mx-auto mb-2" />
-                          <p className="text-sm">PDF Preview</p>
-                          <p className="text-xs">{template.id}</p>
-                        </div>
+                      {/* Template Preview */}
+                      <div className="aspect-[8.5/11] bg-white rounded-lg border overflow-hidden">
+                        <PdfPreview filePath={template.filePath} />
                       </div>
 
                       <div className="flex items-center justify-between text-sm text-gray-500">

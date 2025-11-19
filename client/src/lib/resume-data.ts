@@ -44,3 +44,13 @@ export function generateTemplates(category: string, count: number): Template[] {
     preview: `template_preview_${category}_${i + 1}.png`
   }));
 }
+
+export function createEmptyResumeData(): ResumeData {
+  return {
+    personalInfo: { name: "", email: "", phone: "" },
+    experience: [],
+    education: [],
+    skills: [],
+    // Add more fields as per your ResumeData type
+  };
+}

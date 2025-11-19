@@ -21,7 +21,7 @@ const mockSuggestions = {
   ]
 };
 
-export async function generateAISuggestions(field: string, value: string): Promise<string[]> {
+export async function getSuggestion(field: string, value: string): Promise<string[]> {
   // Try to use the real Gemini API first
   try {
     return await generateAISuggestionsWithGemini(field, value);
@@ -33,13 +33,13 @@ export async function generateAISuggestions(field: string, value: string): Promi
 
 function generateMockSuggestions(field: string, value: string): string[] {
   // Simulate API delay
-  setTimeout(() => {}, 500);
-  
+  setTimeout(() => { }, 500);
+
   // Return mock suggestions based on field type
   if (field in mockSuggestions) {
     return mockSuggestions[field as keyof typeof mockSuggestions];
   }
-  
+
   return [];
 }
 

@@ -16,9 +16,9 @@ export function Footer() {
       title: "Resources",
       links: [
         { name: "Resume Tips", href: "/tips" },
-        { name: "Professional Cover Letters - Elevate your applications with expertly crafted cover letters that complement your resume perfectly", href: "/cover-letters" },
-        { name: "Interview Preparation - Master your next interview with proven strategies, practice questions, and confidence-building techniques", href: "/interview-prep" },
-        { name: "Career Advancement Advice - Navigate your career path with expert guidance on promotions, job transitions, and professional growth", href: "/career-advice" },
+        { name: "Cover Letters", href: "/resources/cover-letters" },
+        { name: "Interview Prep", href: "/resources/interview-prep" },
+        { name: "Career Advice", href: "/resources/career-advice" },
       ],
     },
     {

@@ -18,7 +18,7 @@ interface ChatMessage {
   suggestions?: string[];
 }
 
-export function AIChatbot({ onSuggestion, context }: ChatbotProps) {
+export default function AIChatbot({ onSuggestion, context }: ChatbotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -89,17 +89,16 @@ export function AIChatbot({ onSuggestion, context }: ChatbotProps) {
           </div>
         </div>
       </CardHeader>
-      
+
       {!isMinimized && (
         <CardContent className="p-0 flex flex-col h-80">
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.map((message, index) => (
               <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xs p-3 rounded-lg ${
-                  message.type === 'user' 
-                    ? 'bg-blue-500 text-white' 
+                <div className={`max-w-xs p-3 rounded-lg ${message.type === 'user'
+                    ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 text-gray-800'
-                }`}>
+                  }`}>
                   <p className="text-sm">{message.content}</p>
                   {message.suggestions && (
                     <div className="mt-2 space-y-1">
@@ -118,7 +117,7 @@ export function AIChatbot({ onSuggestion, context }: ChatbotProps) {
               </div>
             ))}
           </div>
-          
+
           <div className="p-4 border-t">
             <div className="flex space-x-2">
               <Input
