@@ -1,37 +1,29 @@
 import { Card, CardContent } from "@/components/ui/card";
-import type { ResumeData, Template } from "@shared/schema";
-import { getDocument } from 'pdfjs-dist/build/pdf'; // Proper import for pdfjs-dist
 import { useState, useEffect } from 'react';
+import { getDocument } from 'pdfjs-dist';
+import { ResumeData, Template } from '@shared/schema';
+
+
+
 
 interface ResumePreviewProps {
   resumeData: ResumeData;
   template: Template;
   isPaid: boolean;
+  customization: { fontFamily: string; fontSize: string; primaryColor: string; secondaryColor: string; layout: string };
 }
 
-export function ResumePreview({ resumeData, template, isPaid }: ResumePreviewProps) {
+export default function ResumePreview({ resumeData, template, isPaid, customization }: ResumePreviewProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Map of template names to their static PDF files (assuming they are in public folder)
-  const templateMap: { [key: string]: string } = {
-    'modern_01': '/resume-templates/modern/modern_01.pdf',
-    'modern_02': '/resume-templates/modern/modern_02.pdf',
-    'modern_03': '/resume-templates/modern/modern_03.pdf',
-    'modern_04': '/resume-templates/modern/modern_04.pdf',
-    'modern_05': '/resume-templates/modern/modern_05.pdf',
-    'modern_06': '/resume-templates/modern/modern_06.pdf',
-    'modern_07': '/resume-templates/modern/modern_07.pdf',
-    'modern_08': '/resume-templates/modern/modern_08.pdf',
-  };
-
-  // Load PDF content
   useEffect(() => {
     const loadPdf = async () => {
       setPdfUrl(null);
       setError(null);
       try {
-        const pdfPath = templateMap[template.name] || templateMap['modern_01'];
+        // Use template.filePath directly
+        const pdfPath = template.filePath; 
         console.log('Attempting to load PDF from path:', pdfPath);
         const loadingTask = getDocument(pdfPath);
         const pdf = await loadingTask.promise;
@@ -46,16 +38,17 @@ export function ResumePreview({ resumeData, template, isPaid }: ResumePreviewPro
         if (!context) throw new Error('Failed to get 2D context');
         canvas.height = viewport.height;
         canvas.width = viewport.width;
-        await page.render({ canvasContext: context, viewport }).promise;
+        await page.render({ canvasContext: context, viewport, canvas }).promise;
         setPdfUrl(canvas.toDataURL());
-      } catch (err) {
+      } catch (err: any) { // Explicitly type err as any
         console.error('Error details:', err);
         setError(`Failed to load PDF: ${err.message}. Check console for details.`);
       }
     };
 
-    loadPdf(); // Directly call since pdfjs-dist is imported
-  }, [template.name]);
+    loadPdf(); 
+  }, [template.filePath]);
+
 
   return (
     <Card className="w-full max-w-2xl mx-auto bg-white shadow-lg">
@@ -70,6 +63,7 @@ export function ResumePreview({ resumeData, template, isPaid }: ResumePreviewPro
         {pdfUrl && <img src={pdfUrl} alt="PDF Preview" className="w-full" />}
         {!pdfUrl && !error && <p>Loading PDF...</p>}
 
+        {/* Existing HTML structure for resumeData - this is the "editable" part */}
         <div className="space-y-6">
           {/* Header */}
           <div className="text-center border-b border-border pb-4 relative">
@@ -199,4 +193,3 @@ export function ResumePreview({ resumeData, template, isPaid }: ResumePreviewPro
     </Card>
   );
 }
-export default ResumePreview; // Moved to top level, outside the function

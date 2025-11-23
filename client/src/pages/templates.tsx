@@ -6,17 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Template } from "@shared/schema";
 import { PdfPreview } from "@/components/pdf-preview";
 
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  isPremium: boolean;
-  rating: number;
-  downloads: string;
-  filePath: string;
-}
 
 export default function Templates() {
   const [templates, setTemplates] = useState<Template[]>([]);
